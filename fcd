@@ -1,0 +1,61 @@
+#!/bin/bash
+#
+# fcd.sh:
+#
+# Fast change directory. Should be sourced from ~/.bashrc file, since it is and
+# needs to be a function.
+#
+#	Update Ver.1.1, 2021-03-03
+#		Bugfix for missing results when fast changing to "bin", thanks to m_bostaurus.
+#	Update Ver.1.0, 2021-02-07
+#		changed from egrep to mapfile, see code. Handles blanks in paths now flawlessly.
+#   Update Ver.0.9, 2013-08-21, comments, publication
+#
+#   Prototyp 2010
+#
+# This program depends on locate/updatedb, which aren't always installed/activated.
+# If you use the shell on a regular basis, you should have them installed, though.
+#
+#	(c) GPLv3 (2010, 2021)
+#
+fcd ()
+{
+	suchdirname=$1
+	# list=$(locate $1 | egrep "/$1$"); # Version 1
+	# update 12.02.2021
+	# mapfile -d '' list < <(locate -b -0 -r "$suchdirname$")
+	# update 19.02.2021
+	mapfile -d '' list < <(locate -b -0 -r "^$suchdirname$")
+	# count=$(echo $list | wc -w );
+	# update 19.02.2021
+	count=${#list[@]}
+	case $count in
+        0)
+            echo "unknown directory: "$1 && return
+            # could search for partial matches Doc => Documentation
+        ;;
+        1)
+            if [[ -d "${list[0]}" ]]; then
+                echo "1) match: $list"
+                cd "$list"
+            else
+                echo "not a directory: $1"
+            fi
+        ;;
+        *)
+            select directory in "${list[@]}" "/exit/"
+            do
+                if [[ "$directory" = "/exit/" ]]; then
+                    break
+                fi
+                if [[ -d "$directory" ]]; then
+                    echo "multi) $directory"
+                    cd "$directory"
+                    break
+                else
+                    echo "not a directory: "$1
+                fi
+            done
+        ;;
+    esac
+}
